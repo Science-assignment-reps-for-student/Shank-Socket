@@ -6,6 +6,7 @@ import kr.hs.dsm_scarfs.shank.socket.entities.message.Message;
 import kr.hs.dsm_scarfs.shank.socket.entities.message.repository.MessageRepository;
 import kr.hs.dsm_scarfs.shank.socket.entities.user.User;
 import kr.hs.dsm_scarfs.shank.socket.entities.user.UserFactory;
+import kr.hs.dsm_scarfs.shank.socket.payload.ErrorResponse;
 import kr.hs.dsm_scarfs.shank.socket.payload.MessageRequest;
 import kr.hs.dsm_scarfs.shank.socket.payload.MessageResponse;
 import kr.hs.dsm_scarfs.shank.socket.security.AuthorityType;
@@ -15,9 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.Date;
-import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -38,20 +37,20 @@ public class SocketServiceImpl implements SocketService {
             studentId = Integer.parseInt(client.getHandshakeData().getSingleUrlParam("studentId"));
             adminId = Integer.parseInt(client.getHandshakeData().getSingleUrlParam("adminId"));
         } catch (NumberFormatException e) {
-            clientDisconnect(client, "Can not resolve users ids");
+            clientDisconnect(client, 403, "Can not resolve users ids");
             return;
         }
 
         String token = client.getHandshakeData().getSingleUrlParam("token");
         if (!jwtTokenProvider.validateToken(token)) {
-            clientDisconnect(client, "Can not resolve token");
+            clientDisconnect(client, 403, "Can not resolve token");
             return;
         }
         User user;
         try {
             user = userFactory.getUser(jwtTokenProvider.getUserEmail(token));
         } catch (Exception e) {
-            clientDisconnect(client, "Could not get user");
+            clientDisconnect(client, 404, "Could not get user");
             return;
         }
 
@@ -61,7 +60,7 @@ public class SocketServiceImpl implements SocketService {
         } else if (user.getType().equals(AuthorityType.ADMIN) && user.getId().equals(adminId)) {
             client.joinRoom(studentId + ":" + adminId);
         } else {
-            clientDisconnect(client, "Can not join room (permission denied)");
+            clientDisconnect(client, 403, "Can not join room (permission denied)");
             return;
         }
 
@@ -118,9 +117,16 @@ public class SocketServiceImpl implements SocketService {
                 .type(message.getType())
                 .build());
 
+        String arrow;
+        if (user.getType().equals(AuthorityType.STUDENT))
+            arrow = "->";
+        else
+            arrow = "<-";
+
         printLog(
                 client,
-                String.format("Send Message [Student: %d, Admin: %d] %s -> %n", studentId, adminId, user.getType())
+                String.format("Send Message [Student(%d) %s Admin(%d)] : %s %n",
+                        studentId, arrow, adminId, message.getMessage())
         );
     }
 
@@ -137,7 +143,8 @@ public class SocketServiceImpl implements SocketService {
         );
     }
 
-    private void clientDisconnect(SocketIOClient client, String reason) {
+    private void clientDisconnect(SocketIOClient client, Integer status, String reason) {
+        client.sendEvent("error", new ErrorResponse(status, reason));
         client.disconnect();
         printLog(
                 client,
