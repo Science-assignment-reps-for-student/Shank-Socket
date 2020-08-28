@@ -1,0 +1,15 @@
+server:
+  socket:
+    port: ${SOCKET_PORT}
+
+spring:
+  jpa:
+    database: mysql
+  datasource:
+    url: ${MYSQL_URL}
+    username: ${MYSQL_USERNAME}
+    password: ${MYSQL_PASSWORD}
+
+auth:
+  jwt:
+    secret: ${JWT_SECRET_KEY}
