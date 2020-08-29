@@ -137,9 +137,9 @@ public class SocketServiceImpl implements SocketService {
         User target;
         try {
             if (message.getType().equals(AuthorityType.STUDENT))
-                target = userFactory.getAdmin(message.getWriterId());
+                target = userFactory.getAdmin(message.getAdminId());
             else
-                target = userFactory.getStudent(message.getWriterId());
+                target = userFactory.getStudent(message.getStudentId());
         } catch (Exception e) {
             clientDisconnect(client, 404, "Could not get user");
             return;

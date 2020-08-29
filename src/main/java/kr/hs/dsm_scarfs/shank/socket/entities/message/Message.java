@@ -37,11 +37,4 @@ public class Message {
         else return message;
     }
 
-    public Integer getWriterId() {
-        if (this.getType().equals(AuthorityType.STUDENT))
-            return studentId;
-        else
-            return adminId;
-    }
-
 }
