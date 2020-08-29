@@ -21,9 +21,11 @@ public class SocketController {
         server.addConnectListener(socketService::connect);
         server.addDisconnectListener(socketService::disConnect);
 
+        server.addEventListener("joinRoom", String.class,
+                (client, room, ackSender) -> socketService.joinRoom(client, room));
+
         server.addEventListener("send", MessageRequest.class,
                 (client, data, ackSender) -> socketService.chat(client, data));
-
     }
 
 }

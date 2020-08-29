@@ -22,4 +22,14 @@ public class UserFactory {
                 .orElseThrow(Exception::new);
     }
 
+    public User getStudent(Integer id) throws Exception {
+        return studentRepository.findById(id)
+                .orElseThrow(Exception::new);
+    }
+
+    public User getAdmin(Integer id) throws Exception {
+        return adminRepository.findById(id)
+                .orElseThrow(Exception::new);
+    }
+
 }

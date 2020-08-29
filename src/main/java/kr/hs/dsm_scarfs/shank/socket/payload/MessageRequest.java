@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class MessageRequest {
 
+    private String room;
     private String message;
 
 }

@@ -32,14 +32,16 @@ public class Message {
 
     private boolean isDeleted;
 
-    public Message read() {
-        this.isShow = true;
-        return this;
+    public String getMessage() {
+        if (this.isDeleted) return "";
+        else return message;
     }
 
-    public Message delete() {
-        this.isDeleted = true;
-        return this;
+    public Integer getWriterId() {
+        if (this.getType().equals(AuthorityType.STUDENT))
+            return studentId;
+        else
+            return adminId;
     }
 
 }

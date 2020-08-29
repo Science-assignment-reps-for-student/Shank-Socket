@@ -13,11 +13,17 @@ public class MessageResponse {
 
     private Integer id;
 
+    private String name;
+
     private String message;
 
     private AuthorityType type;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime time;
+
+    private boolean isDeleted;
+
+    private Integer target;
 
 }

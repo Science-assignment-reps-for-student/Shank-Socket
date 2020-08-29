@@ -31,42 +31,28 @@ public class SocketServiceImpl implements SocketService {
 
     @Override
     public void connect(SocketIOClient client) {
-        int studentId;
-        int adminId;
-        try {
-            studentId = Integer.parseInt(client.getHandshakeData().getSingleUrlParam("studentId"));
-            adminId = Integer.parseInt(client.getHandshakeData().getSingleUrlParam("adminId"));
-        } catch (NumberFormatException e) {
-            clientDisconnect(client, 403, "Can not resolve users ids");
-            return;
-        }
-
         String token = client.getHandshakeData().getSingleUrlParam("token");
         if (!jwtTokenProvider.validateToken(token)) {
             clientDisconnect(client, 403, "Can not resolve token");
             return;
         }
+
         User user;
         try {
             user = userFactory.getUser(jwtTokenProvider.getUserEmail(token));
+            client.set("user", user);
         } catch (Exception e) {
             clientDisconnect(client, 404, "Could not get user");
             return;
         }
 
-        client.set("user", user);
-        if (user.getType().equals(AuthorityType.STUDENT) && user.getId().equals(studentId)) {
-            client.joinRoom(studentId + ":" + adminId);
-        } else if (user.getType().equals(AuthorityType.ADMIN) && user.getId().equals(adminId)) {
-            client.joinRoom(studentId + ":" + adminId);
-        } else {
-            clientDisconnect(client, 403, "Can not join room (permission denied)");
-            return;
-        }
 
         printLog(
                 client,
-                String.format("Socket Connected, Session Id: %s%n", client.getSessionId())
+                String.format("Socket Connected [%s %s], Session Id: %s%n",
+                        user.getType(),
+                        user.getEmail(),
+                        client.getSessionId())
         );
     }
 
@@ -79,21 +65,59 @@ public class SocketServiceImpl implements SocketService {
     }
 
     @Override
-    public void chat(SocketIOClient client, MessageRequest messageRequest) {
-        int studentId = 0;
-        int adminId = 0;
-        for (String room : client.getAllRooms()) {
-            if (room.length() == 0) continue;
-            String[] splitRoom = room.split(":");
-            studentId = Integer.parseInt(splitRoom[0]);
-            adminId = Integer.parseInt(splitRoom[1]);
-        }
-        if (studentId == 0 || adminId == 0) {
-            client.disconnect();
+    public void joinRoom(SocketIOClient client, String room) {
+        int studentId;
+        int adminId;
+        try {
+            studentId = Integer.parseInt(room.split(":")[0]);
+            adminId = Integer.parseInt(room.split(":")[1]);
+        } catch (NumberFormatException e) {
+            clientDisconnect(client, 403, "Can not resolve users ids");
             return;
         }
+
         User user = client.get("user");
-        if (!user.getId().equals(studentId) && !user.getId().equals(adminId)) {
+        if (user == null) {
+            clientDisconnect(client, 403, "Invalid Connection");
+            return;
+        } else if (user.getType().equals(AuthorityType.STUDENT) && user.getId().equals(studentId)) {
+            client.joinRoom(studentId + ":" + adminId);
+        } else if (user.getType().equals(AuthorityType.ADMIN) && user.getId().equals(adminId)) {
+            client.joinRoom(studentId + ":" + adminId);
+        } else {
+            clientDisconnect(client, 403, "Can not join room (permission denied)");
+            return;
+        }
+
+        String arrow;
+        if (user.getType().equals(AuthorityType.STUDENT))
+            arrow = "->";
+        else
+            arrow = "<-";
+        printLog(
+                client,
+                String.format("Join Room [Student(%d) %s Admin(%d)] Session Id: %s%n",
+                        studentId, arrow, adminId, client.getSessionId())
+        );
+    }
+
+    @Override
+    public void chat(SocketIOClient client, MessageRequest messageRequest) {
+        String[] splitRoom = messageRequest.getRoom().split(":");
+        Integer studentId = Integer.parseInt(splitRoom[0]);
+        Integer adminId = Integer.parseInt(splitRoom[1]);
+        String room = studentId + ":" + adminId;
+
+        if (!client.getAllRooms().contains(room)) {
+            clientDisconnect(client, 401, "Permission Denied");
+            return;
+        }
+
+        User user = client.get("user");
+        if (user == null) {
+            clientDisconnect(client, 403, "Invalid Connection");
+            return;
+        } else if (!user.getId().equals(studentId) && !user.getId().equals(adminId)) {
             client.disconnect();
             return;
         }
@@ -110,11 +134,25 @@ public class SocketServiceImpl implements SocketService {
                         .build()
         );
 
-        server.getRoomOperations(studentId + ":" + adminId).sendEvent("receive", MessageResponse.builder()
+        User target;
+        try {
+            if (message.getType().equals(AuthorityType.STUDENT))
+                target = userFactory.getStudent(message.getWriterId());
+            else
+                target = userFactory.getAdmin(message.getWriterId());
+        } catch (Exception e) {
+            clientDisconnect(client, 404, "Could not get user");
+            return;
+        }
+
+        server.getRoomOperations(room).sendEvent("receive", MessageResponse.builder()
                 .id(message.getId())
+                .name(target.getName())
                 .message(message.getMessage())
                 .time(message.getTime())
                 .type(message.getType())
+                .isDeleted(message.isDeleted())
+                .target(target.getId())
                 .build());
 
         String arrow;
