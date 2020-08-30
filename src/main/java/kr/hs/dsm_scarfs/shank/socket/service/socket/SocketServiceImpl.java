@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Date;
 
 @Service
@@ -128,7 +129,7 @@ public class SocketServiceImpl implements SocketService {
                         .adminId(adminId)
                         .message(messageRequest.getMessage())
                         .type(user.getType())
-                        .time(LocalDateTime.now())
+                        .time(LocalDateTime.now(ZoneId.of("Asia/Seoul")))
                         .isDeleted(false)
                         .isShow(false)
                         .build()
