@@ -17,7 +17,6 @@ import org.springframework.stereotype.Service;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Date;
 
 @Service
 @RequiredArgsConstructor
@@ -170,9 +169,8 @@ public class SocketServiceImpl implements SocketService {
     }
 
     private void printLog(SocketIOClient client, String content) {
-        Date date = new Date();
         SimpleDateFormat DateFor = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss.SSS");
-        String stringDate= DateFor.format(date);
+        String stringDate= DateFor.format(LocalDateTime.now(ZoneId.of("Asia/Seoul")));
 
         System.out.printf(
                 "%s  %s - [%s] - " + content,
