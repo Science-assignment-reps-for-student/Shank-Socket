@@ -12,6 +12,7 @@ import kr.hs.dsm_scarfs.shank.socket.payload.MessageResponse;
 import kr.hs.dsm_scarfs.shank.socket.security.AuthorityType;
 import kr.hs.dsm_scarfs.shank.socket.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.springframework.stereotype.Service;
 
 import java.text.SimpleDateFormat;
@@ -168,9 +169,10 @@ public class SocketServiceImpl implements SocketService {
         );
     }
 
+    @SneakyThrows
     private void printLog(SocketIOClient client, String content) {
         SimpleDateFormat DateFor = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss.SSS");
-        String stringDate= DateFor.format(LocalDateTime.now(ZoneId.of("Asia/Seoul")));
+        String stringDate= DateFor.parse(LocalDateTime.now(ZoneId.of("Asia/Seoul")).toString().replace("T", " ")).toString();
 
         System.out.printf(
                 "%s  %s - [%s] - %s",
