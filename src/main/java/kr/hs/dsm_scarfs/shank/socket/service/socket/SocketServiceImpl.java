@@ -173,10 +173,11 @@ public class SocketServiceImpl implements SocketService {
         String stringDate= DateFor.format(LocalDateTime.now(ZoneId.of("Asia/Seoul")));
 
         System.out.printf(
-                "%s  %s - [%s] - " + content,
+                "%s  %s - [%s] - %s",
                 stringDate,
                 "SOCKET",
-                client.getRemoteAddress().toString().substring(1)
+                client.getRemoteAddress().toString().substring(1),
+                content
         );
     }
 
